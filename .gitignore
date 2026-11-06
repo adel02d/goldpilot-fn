@@ -1,0 +1,23 @@
+# Secretos
+.env
+*.env
+
+# Estado y journal (datos personales de tu operativa)
+state.json
+signals_log.csv
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.mypy_cache/
+.pytest_cache/
+
+# IDE
+.vscode/
+.idea/
+
+# Sistema
+.DS_Store
+Thumbs.db

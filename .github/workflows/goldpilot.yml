@@ -1,0 +1,55 @@
+name: GoldPilot FN — vigilancia 24/7
+
+# Ejecuta un ciclo de análisis cada 5 minutos, todo el día, todos los días.
+# Cada ciclo: lee comandos de Telegram → revisa rutinas → evalúa ventana horaria
+# (Londres 07:00–11:30 UTC / NY 13:00–16:30 UTC) → si hay señal válida, la envía.
+#
+# Coste: 0 $ (repo público). Las horas fuera de ventana terminan en <2 s.
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"   # cada 5 minutos (mínimo permitido por GitHub)
+  workflow_dispatch:          # botón "Run workflow" para pruebas manuales
+
+concurrency:
+  group: goldpilot
+  cancel-in-progress: true    # nunca dos ciclos solapados
+
+# Necesario para que el paso "Persistir estado" pueda commitear state.json
+permissions:
+  contents: write
+
+jobs:
+  patrol:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+
+      - name: Ciclo de vigilancia
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          FN_INITIAL_EQUITY: ${{ secrets.FN_INITIAL_EQUITY }}
+          FN_START_DATE: ${{ secrets.FN_START_DATE }}
+          LOG_LEVEL: INFO
+        run: python main.py --once
+
+      # El estado (equidad, fase, contadores del día) se persiste entre ciclos
+      # commiteando state.json en el mismo branch.
+      - name: Persistir estado
+        if: always()
+        run: |
+          git config user.name "goldpilot-bot"
+          git config user.email "actions@github.com"
+          git add -f state.json signals_log.csv 2>/dev/null || true
+          git diff --cached --quiet || git commit -m "chore: estado GoldPilot $(date -u +%FT%TZ)"
+          git push

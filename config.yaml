@@ -1,0 +1,37 @@
+# ============================================================
+# GoldPilot FN — Configuración del copiloto
+# ============================================================
+
+general:
+  poll_seconds: 60          # cada cuántos segundos revisa el mercado (loop 24/7)
+  state_file: state.json
+
+account:
+  # 👇 PON AQUÍ LOS DATOS REALES DE TU CUENTA DEL CONCURSO
+  initial_equity: 10000     # equidad inicial de la cuenta de la competencia
+  start_date: ""            # "2026-11-03" → día 1 de la ventana de 14 días (vacío = no iniciado)
+
+telegram:
+  # Déjalo vacío y usa variables de entorno (más seguro):
+  #   TELEGRAM_BOT_TOKEN y TELEGRAM_CHAT_ID
+  bot_token: ""
+  chat_id: ""
+
+feed:
+  # auto | yfinance | mt5
+  #   auto    → usa MT5 si el entorno lo tiene (Windows/VPS), si no yfinance (nube)
+  #   yfinance → proxy del oro con GC=F (GitHub Actions, Railway, Render)
+  #   mt5     → precios reales del broker (requiere MT5 instalado en ese host)
+  mode: auto
+  mt5_login: null
+  mt5_password: ""
+  mt5_server: ""
+
+strategy:
+  breakout_buffer_atr: 0.15   # buffer de ruptura (×ATR M15) sobre el rango asiático
+  sl_buffer_atr: 0.5          # separación extra del SL bajo el rango
+  min_rr: 1.5                 # R:R mínimo exigido para emitir señal
+  dead_range_atr_ratio: 0.3   # rango asiático < 30% del ATR diario = mercado muerto
+
+# La Constitución (límites del concurso) vive en copilot/risk.py — no editable desde aquí
+# a propósito: la disciplina no se negocia por config.
