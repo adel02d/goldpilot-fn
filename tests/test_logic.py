@@ -193,5 +193,65 @@ class TestIndicadores:
         assert len(e20) == len(e50) and e20.iloc[-1] > 0
 
 
+# ------------------------------------------------------------------ ejecutor
+
+from copilot.executor import SimExecutor, validate_signal  # noqa: E402
+
+
+def _sig_buy() -> Signal:
+    return Signal(kind="BUY", setup="A", entry=2000.0, sl=1995.0,
+                  tp1=2010.0, tp2=2020.0, reason="t", invalidation="i")
+
+
+class TestSimExecutor:
+    def test_rechaza_lote_cero(self):
+        ex = SimExecutor()
+        res = ex.execute_signal(_sig_buy(), {"lot": 0.0})
+        assert res["ok"] is False
+        assert ex.open_positions() == 0
+
+    def test_validacion_niveles(self):
+        mala = Signal(kind="BUY", setup="A", entry=2000.0, sl=2010.0,
+                      tp1=2020.0, tp2=2030.0, reason="t", invalidation="i")
+        ok, why = validate_signal(mala, 0.1)
+        assert not ok  # SL sobre la entrada en un BUY
+
+    def test_abre_y_cierra_en_sl(self):
+        ex = SimExecutor(balance=10_000.0)
+        res = ex.execute_signal(_sig_buy(), {"lot": 0.10})
+        assert res["ok"] and ex.open_positions() == 1
+        evs = ex.manage_positions(1995.0)          # toca el SL
+        assert evs[0]["cause"] == "SL"
+        assert evs[0]["pnl"] == pytest.approx(-50.0)   # -5$ × 0.10 × 100
+        assert ex.balance == pytest.approx(9_950.0)
+        assert ex.open_positions() == 0
+
+    def test_cierra_en_tp2(self):
+        ex = SimExecutor()
+        ex.execute_signal(_sig_buy(), {"lot": 0.10})
+        evs = ex.manage_positions(2020.0)
+        assert evs[0]["cause"] == "TP2"
+        assert evs[0]["pnl"] == pytest.approx(200.0)   # +20 × 0.10 × 100
+        assert ex.current_equity(2020.0) == pytest.approx(10_200.0)
+
+    def test_tp1_breakeven(self):
+        ex = SimExecutor()
+        ex.execute_signal(_sig_buy(), {"lot": 0.10})
+        evs = ex.manage_positions(2010.0)          # toca TP1
+        assert evs[0]["event"] == "tp1_breakeven"
+        assert evs[0]["pnl"] == pytest.approx(50.0)    # mitad 0.05 × +10 × 100
+        assert evs[0]["remaining"] == pytest.approx(0.05)
+        assert evs[0]["new_sl"] == 2000.0          # SL a la entrada
+        evs2 = ex.manage_positions(2000.0)         # vuelve a entrada → cierra
+        assert evs2[0]["pnl"] == pytest.approx(0.0)
+        assert ex.balance == pytest.approx(10_050.0)
+        assert ex.open_positions() == 0
+
+    def test_equidad_flotante(self):
+        ex = SimExecutor()
+        ex.execute_signal(_sig_buy(), {"lot": 0.10})
+        assert ex.current_equity(2010.0) == pytest.approx(10_100.0)
+
+
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__, "-v"]))

@@ -35,3 +35,23 @@ strategy:
 
 # La Constitución (límites del concurso) vive en copilot/risk.py — no editable desde aquí
 # a propósito: la disciplina no se negocia por config.
+
+# ══════════════════════════════════════════════════════════════════
+# BRAZO EJECUTOR (executor_main.py) — SOLO demo o challenge MT5 < $50K
+# ⚠️ La cuenta del CONCURSO jamás pasa por aquí (descalificación).
+# ══════════════════════════════════════════════════════════════════
+execution:
+  # disabled → el ejecutor no puede arrancar en modo real (solo --sim)
+  # sim      → simulación con dinero virtual
+  # mt5      → órdenes reales vía terminal MT5 (requiere add-on EA si es challenge)
+  mode: disabled
+  state_file: executor_state.json
+  sim_balance: 10000        # dinero virtual del modo --sim
+  symbol: XAUUSD
+  magic: 20261106           # identificador de las órdenes del ejecutor
+  deviation: 20             # slippage máximo en puntos
+  comment: GoldPilot
+  # Credenciales de la cuenta DEMO/CHALLENGE (terminal MT5 debe estar abierto):
+  mt5_login: null
+  mt5_password: ""
+  mt5_server: ""

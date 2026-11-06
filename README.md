@@ -45,11 +45,13 @@ Tú decides si ejecutar o no cada señal. El bot nunca toca tu cuenta.
 fundednext-ai-copilot/
 ├── SUPER_PROMPT.md              ← ⭐ el súper prompt maestro del agente
 ├── main.py                      ← punto de entrada (loop 24/7 o --once)
+├── executor_main.py             ← 🤖 brazo ejecutor automático (SOLO demo/challenge MT5)
 ├── config.yaml                  ← equidad, feed, parámetros de estrategia
 ├── copilot/
 │   ├── feed.py                  ← datos: MetaTrader5 (real) o yfinance (nube)
 │   ├── strategy.py              ← Setups A (ruptura asiática) y B (pullback NY)
 │   ├── risk.py                  ← Constitución + escalera adaptativa de fases
+│   ├── executor.py              ← ejecución de órdenes: SimExecutor / MT5Executor
 │   ├── state.py                 ← persistencia JSON + journal CSV
 │   └── telegram_bot.py          ← fichas de señal, comandos, control remoto
 ├── .github/workflows/
@@ -139,12 +141,46 @@ python main.py --dry-run --once     # un ciclo en consola, sin Telegram
 python main.py                      # loop 24/7 local
 ```
 
+## 🤖 Modo EJECUTOR automático — dónde es legal y dónde NO
+
+El mismo cerebro (estrategia + escalera de riesgo) puede **colocar órdenes él solo** con
+`executor_main.py`. La frontera es el reglamento, verificada en nov. 2026:
+
+| Cuenta | ¿Puede operar el ejecutor? | Por qué |
+|---|---|---|
+| **Concurso mensual** | ❌ **NUNCA** | "Manual trading only — will disqualify the entry" |
+| **Demo** (gratis) | ✅ Sí, hoy | Sin dinero, para validar el sistema completo |
+| **Challenge MT5 < $50K** con add-on EA pagado | ✅ Sí | FundedNext permite EAs en MT4/MT5 < $50K |
+| Challenge ≥ $50K | ❌ No | Manual obligatorio |
+| cTrader / Match-Trader | ❌ No | La plataforma no permite automatización |
+
+Extra por reglas de EA: el ejecutor **no integra Telegram** (prohibido por FundedNext)
+y usa tu estrategia propia con parámetros propios (estrategia distinta exigida).
+
+```bash
+# HOY, gratis, sin cuenta: simulación con precios reales del oro
+python executor_main.py --sim
+
+# Cuando tengas demo o challenge MT5 (< $50K, add-on EA pagado):
+#   1. PC Windows o VPS con el terminal MT5 abierto y con sesión iniciada
+#   2. pip install MetaTrader5   (solo existe en Windows)
+#   3. en config.yaml → execution: (symbol, login, password, server del terminal)
+#   4. python executor_main.py --mt5
+```
+
+Gestión automática de cada posición: SL y TP2 colocados desde el primer segundo;
+al tocar **TP1 cierra el 50% y sube el SL a la entrada** (breakeven, cero riesgo).
+El estado vive en `executor_state.json`, separado del estado del concurso.
+
 ## ⚠️ Descargo de responsabilidad (léelo de verdad)
 
 - Este proyecto es **educativo y de apoyo al proceso**. **Ninguna IA ni bot puede
   garantizar posiciones de premio**: el leaderboard depende del mercado y de miles de
   participantes. Lo que sí controla este sistema es la disciplina, la velocidad de
   análisis y el cumplimiento estricto de las reglas.
+- El ejecutor automático (`executor_main.py`) es **solo para demo o challenges MT5
+  menores de $50,000 con el add-on de EA**. Usarlo en la cuenta del concurso, en
+  cuentas ≥ $50K, en cTrader o Match-Trader viola las reglas y anula tus resultados.
 - Operar derivados implica riesgo elevado de pérdida. Las señales no son asesoramiento
   financiero; tú asumes cada decisión de ejecución.
 - No uses VPN ni multicuenta: es descalificación permanente. Cuba no está en la lista de

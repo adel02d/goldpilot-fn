@@ -4,5 +4,5 @@ pandas>=2.0
 numpy>=1.24
 PyYAML>=6.0
 python-dotenv>=1.0
-# Solo si corres el bot en Windows/VPS con terminal MT5 instalado:
-# MetaTrader5>=5.0.45
+# Ejecutor real: solo se instala en Windows (PC/VPS con terminal MT5)
+MetaTrader5>=5.0.45 ; sys_platform == "win32"
