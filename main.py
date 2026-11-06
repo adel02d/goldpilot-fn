@@ -89,6 +89,14 @@ class GoldPilot:
 
     # ---------------------------------------------------------------- ciclo
     def cycle(self) -> None:
+        try:
+            self._cycle_body()
+        finally:
+            # Guarda el estado en TODOS los ciclos (fases, comandos, conteos).
+            # Si el contenido no cambia, el workflow no crea commits innecesarios.
+            self.store.save(self.state)
+
+    def _cycle_body(self) -> None:
         now = datetime.now(timezone.utc)
         h = now.hour + now.minute / 60.0
 
@@ -151,8 +159,6 @@ class GoldPilot:
             print(f"[SEÑAL] {sig.kind} XAUUSD entrada={sig.entry} SL={sig.sl} "
                   f"TP1={sig.tp1} TP2={sig.tp2} lote={lot['lot']} RR=1:{sig.rr} "
                   f"| {sig.reason}")
-
-        self.store.save(self.state)
 
     # ---------------------------------------------------------------- rutinas
     def _preopen(self, today: str) -> None:
